@@ -51,6 +51,9 @@
       margin: 0 auto;
       padding: 32px 20px 60px;
     }
+    @media (max-width: 480px) {
+      body { padding: 20px 12px 40px; }
+    }
     a.back {
       display: inline-flex;
       align-items: center;
@@ -79,12 +82,13 @@
       display: flex;
       gap: 8px;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       margin-bottom: 20px;
       padding-bottom: 4px;
     }
     .section-nav a {
       flex: none;
-      padding: 6px 14px;
+      padding: 10px 16px;
       border-radius: 999px;
       background: var(--card);
       border: 1px solid var(--border);
@@ -120,6 +124,10 @@
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px 20px; }
     .grid.compact { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px 16px; margin-top: 8px; }
     .grid div span.label { color: var(--muted); font-size: 0.78rem; display: block; margin-bottom: 2px; }
+    @media (max-width: 480px) {
+      .card { padding: 16px 16px; }
+      .grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px 14px; }
+    }
     .grid div span.value { font-size: 1rem; font-weight: 600; }
     .pill {
       display: inline-block;
@@ -235,8 +243,8 @@
     .chart-stat .delta-note { color: var(--muted); font-size: 0.85rem; }
     .chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
     .chart-svg .grid-line { stroke: var(--border); stroke-width: 1; }
-    .chart-svg .tick-label { fill: var(--muted); font-size: 11px; }
-    .chart-svg .end-label { fill: var(--text); font-size: 12px; font-weight: 700; }
+    .chart-svg .tick-label { fill: var(--muted); font-size: 15px; }
+    .chart-svg .end-label { fill: var(--text); font-size: 16px; font-weight: 700; }
     .chart-svg .area { fill: var(--accent); opacity: 0.10; }
     .chart-svg .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
     .chart-svg .marker { fill: var(--accent); stroke: var(--card); stroke-width: 2; }
