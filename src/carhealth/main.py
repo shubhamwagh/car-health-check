@@ -5,23 +5,23 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from .services import get_zyfy_data, get_mot_data
 from .charts import (
+    build_mileage_chart,
+    buyrec_status,
+    co2_band,
+    co2_status,
+    defect_label,
     fmt_date,
     format_age,
-    co2_status,
-    co2_band,
-    build_mileage_chart,
     group_mot_history,
-    defect_label,
-    risk_status,
-    buyrec_status,
-    odometer_status,
-    momentum_status,
-    ratio_status,
-    riskscore_status,
     humanize,
+    momentum_status,
+    odometer_status,
+    ratio_status,
+    risk_status,
+    riskscore_status,
 )
+from .services import get_mot_data, get_zyfy_data
 
 app = FastAPI(title="Car Health Check")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))

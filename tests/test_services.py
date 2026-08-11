@@ -8,22 +8,27 @@ from carhealth.config import Settings
 
 @pytest.fixture(autouse=True)
 def reset_mot_token_cache():
-    services._mot_token_cache["token"] = None
-    services._mot_token_cache["expires_at"] = 0
+    services._mot_token = None
+    services._mot_token_expires_at = 0
     yield
 
 
-def make_settings(**overrides):
-    defaults = dict(
-        zyfy_api_key="test-zyfy-key",
-        mot_client_id="client-id",
-        mot_client_secret="client-secret",
-        mot_api_key="mot-key",
-        mot_token_url="https://login.example/token",
-        mot_scope_url="https://scope.example/.default",
+def make_settings(
+    zyfy_api_key="test-zyfy-key",
+    mot_client_id="client-id",
+    mot_client_secret="client-secret",
+    mot_api_key="mot-key",
+    mot_token_url="https://login.example/token",
+    mot_scope_url="https://scope.example/.default",
+):
+    return Settings(
+        zyfy_api_key=zyfy_api_key,
+        mot_client_id=mot_client_id,
+        mot_client_secret=mot_client_secret,
+        mot_api_key=mot_api_key,
+        mot_token_url=mot_token_url,
+        mot_scope_url=mot_scope_url,
     )
-    defaults.update(overrides)
-    return Settings(**defaults)
 
 
 class TestGetZyfyData:

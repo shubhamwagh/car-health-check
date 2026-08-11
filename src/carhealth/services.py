@@ -1,7 +1,7 @@
 import asyncio
 import time
-from typing import Optional
 from urllib.parse import quote
+
 import httpx
 
 from .config import Settings, get_settings
@@ -9,10 +9,11 @@ from .config import Settings, get_settings
 ZYFY_URL = "https://zyfy.uk/v1/vehicle/{reg}"
 MOT_URL = "https://history.mot.api.gov.uk/v1/trade/vehicles/registration/{reg}"
 
-_mot_token_cache = {"token": None, "expires_at": 0}
+_mot_token: str | None = None
+_mot_token_expires_at: float = 0
 
 
-async def get_zyfy_data(reg: str, settings: Optional[Settings] = None) -> dict:
+async def get_zyfy_data(reg: str, settings: Settings | None = None) -> dict:
     settings = settings or get_settings()
     api_key = settings.zyfy_api_key
     if not api_key:
@@ -45,17 +46,18 @@ async def get_zyfy_data(reg: str, settings: Optional[Settings] = None) -> dict:
     return {"error": "Zyfy enrichment did not complete in time — try again shortly"}
 
 
-async def _get_mot_token(settings: Settings) -> Optional[str]:
+async def _get_mot_token(settings: Settings) -> str | None:
+    global _mot_token, _mot_token_expires_at
+
     now = time.time()
-    if _mot_token_cache["token"] and _mot_token_cache["expires_at"] > now + 30:
-        return _mot_token_cache["token"]
+    if _mot_token and _mot_token_expires_at > now + 30:
+        return _mot_token
 
     client_id = settings.mot_client_id
     client_secret = settings.mot_client_secret
     token_url = settings.mot_token_url
     scope_url = settings.mot_scope_url
-
-    if not all([client_id, client_secret, token_url, scope_url]):
+    if client_id is None or client_secret is None or token_url is None or scope_url is None:
         return None
 
     data = {
@@ -75,12 +77,12 @@ async def _get_mot_token(settings: Settings) -> Optional[str]:
         return None
 
     body = resp.json()
-    _mot_token_cache["token"] = body["access_token"]
-    _mot_token_cache["expires_at"] = now + body.get("expires_in", 3600)
-    return body["access_token"]
+    _mot_token = body["access_token"]
+    _mot_token_expires_at = now + body.get("expires_in", 3600)
+    return _mot_token
 
 
-async def get_mot_data(reg: str, settings: Optional[Settings] = None) -> dict:
+async def get_mot_data(reg: str, settings: Settings | None = None) -> dict:
     settings = settings or get_settings()
     api_key = settings.mot_api_key
     if not api_key:

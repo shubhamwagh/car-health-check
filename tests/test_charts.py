@@ -193,9 +193,7 @@ class TestGroupMotHistory:
                 "odometerUnit": "MI",
                 "expiryDate": None,
                 "motTestNumber": "851263539457",
-                "defects": [
-                    {"dangerous": False, "text": "Wheel fixing loose", "type": "PRS"}
-                ],
+                "defects": [{"dangerous": False, "text": "Wheel fixing loose", "type": "PRS"}],
             },
         ]
         history = group_mot_history(tests)

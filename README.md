@@ -34,7 +34,16 @@ uv run car-health-check --reload
 
 Then open http://127.0.0.1:8000.
 
-## Docker
+## Self-host with Docker
+
+Pull the published image (amd64 and arm64):
+
+```bash
+docker pull ghcr.io/shubhamwagh/car-health-check:latest
+docker run -p 8000:8000 --env-file .env ghcr.io/shubhamwagh/car-health-check:latest
+```
+
+Or build it yourself:
 
 ```bash
 docker build -t car-health-check .
@@ -45,4 +54,13 @@ docker run -p 8000:8000 --env-file .env car-health-check
 
 ```bash
 uv run pytest
+```
+
+## Dev tooling
+
+Ruff for lint/format, ty for type checking, commitizen for commit messages
+(conventional commits, enforced via a git hook). Set up hooks once:
+
+```bash
+uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
 ```

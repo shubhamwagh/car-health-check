@@ -26,6 +26,10 @@ dev = [
     "pytest-asyncio>=0.24",
     "pytest-cov>=5.0",
     "respx>=0.21",
+    "commitizen>=3.29",
+    "pre-commit>=3.8",
+    "ruff>=0.6",
+    "ty>=0.0.1a1",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -41,3 +45,16 @@ addopts = "--cov=carhealth --cov-report=term-missing --cov-report=xml"
 
 [tool.coverage.run]
 source = ["src/carhealth"]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.1.0"
+version_files = ["pyproject.toml:^version"]
+tag_format = "v$version"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

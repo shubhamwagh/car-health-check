@@ -71,16 +71,18 @@ def group_mot_history(mot_tests):
                 seen.add(key)
                 defects.append(d)
 
-        history.append({
-            "date": fmt_date(final.get("completedDate")),
-            "result": final.get("testResult"),
-            "results": [e.get("testResult") for e in entries],
-            "odometer": odometer,
-            "expiry": fmt_date(expiry) if expiry else None,
-            "test_number": final.get("motTestNumber"),
-            "retested": len(entries) > 1,
-            "defects": defects,
-        })
+        history.append(
+            {
+                "date": fmt_date(final.get("completedDate")),
+                "result": final.get("testResult"),
+                "results": [e.get("testResult") for e in entries],
+                "odometer": odometer,
+                "expiry": fmt_date(expiry) if expiry else None,
+                "test_number": final.get("motTestNumber"),
+                "retested": len(entries) > 1,
+                "defects": defects,
+            }
+        )
     return history
 
 
@@ -241,6 +243,8 @@ def build_mileage_chart(mot_tests):
         seen_years.add(c["year"])
         year_ticks.append({"x": c["x"], "y": baseline_y, "label": str(c["year"])})
 
+    delta = points[-1][1] - points[0][1]
+
     return {
         "width": width,
         "height": height,
@@ -250,6 +254,6 @@ def build_mileage_chart(mot_tests):
         "points": coords,
         "gridlines": gridlines,
         "year_ticks": year_ticks,
-        "delta_label": f"{coords[-1]['value'] - coords[0]['value']:,}",
+        "delta_label": f"{delta:,}",
         "test_count": len(coords),
     }
