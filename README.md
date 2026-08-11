@@ -1,5 +1,9 @@
 # Car Health Check (UK)
 
+[![CI](https://github.com/shubhamwagh/car-health-check/actions/workflows/ci.yml/badge.svg)](https://github.com/shubhamwagh/car-health-check/actions/workflows/ci.yml)
+[![Conventional Commits](https://img.shields.io/badge/conventional%20commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
+[![Docker image](https://img.shields.io/badge/ghcr.io-car--health--check-blue)](https://github.com/shubhamwagh/car-health-check/pkgs/container/car-health-check)
+
 Free vehicle report for UK reg plates: tax status, MOT history, and some
 buyer risk signals (odometer trend, fleet comparison, buy recommendation).
 Uses the DVSA MOT History API and Zyfy's Vehicle Intelligence API. No paid
