@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Report: {{ reg }}</title>
+  <style>
+    :root {
+      --bg: #f9f9f7;
+      --card: #fcfcfb;
+      --text: #0b0b0b;
+      --muted: #898781;
+      --secondary: #52514e;
+      --accent: #2a78d6;
+      --accent-wash: rgba(42, 120, 214, 0.10);
+      --border: #e1e0d9;
+      --row-hover: #f4f4f2;
+      --ok-bg: #e7f6ec; --ok-fg: #0a7d2c;
+      --bad-bg: #fdecea; --bad-fg: #b00020;
+      --warn-bg: rgba(250, 178, 25, 0.14); --warn-fg: #9a6b00;
+      --good: #0ca30c;
+      --warning: #fab219;
+      --serious: #ec835a;
+      --critical: #d03b3b;
+      --status-good-bg: rgba(12, 163, 12, 0.10);
+      --status-warning-bg: rgba(250, 178, 25, 0.14);
+      --status-critical-bg: rgba(208, 59, 59, 0.10);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d0d0d;
+        --card: #1a1a19;
+        --text: #ffffff;
+        --muted: #898781;
+        --secondary: #c3c2b7;
+        --accent: #3987e5;
+        --accent-wash: rgba(57, 135, 229, 0.14);
+        --border: #2c2c2a;
+        --row-hover: #21211f;
+        --ok-bg: #123420; --ok-fg: #4ade80;
+        --bad-bg: #3a1416; --bad-fg: #f87171;
+        --warn-bg: rgba(250, 178, 25, 0.16); --warn-fg: var(--warning);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+    a.back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 20px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    a.back:hover { color: var(--accent); }
+    .plate {
+      display: inline-block;
+      background: #ffd400;
+      color: #111;
+      border: 3px solid #111;
+      border-radius: 6px;
+      padding: 6px 16px;
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      margin: 0 0 24px;
+    }
+    html { scroll-behavior: smooth; }
+    .section-nav {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+      padding-bottom: 4px;
+    }
+    .section-nav a {
+      flex: none;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--secondary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .section-nav a:hover { color: var(--accent); border-color: var(--accent); }
+    h2 {
+      font-size: 1.1rem;
+      margin: 0 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h3.sub-heading {
+      font-size: 0.95rem;
+      margin: 0 0 4px;
+      color: var(--secondary);
+      font-weight: 600;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      scroll-margin-top: 20px;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px 20px; }
+    .grid.compact { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px 16px; margin-top: 8px; }
+    .grid div span.label { color: var(--muted); font-size: 0.78rem; display: block; margin-bottom: 2px; }
+    .grid div span.value { font-size: 1rem; font-weight: 600; }
+    .pill {
+      display: inline-block;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 999px;
+    }
+    .pill.ok { background: var(--ok-bg); color: var(--ok-fg); }
+    .pill.bad { background: var(--bad-bg); color: var(--bad-fg); }
+    .pill.warn { background: var(--warn-bg); color: var(--warn-fg); }
+    .pill.retest { background: var(--row-hover); color: var(--secondary); font-weight: 600; }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 3px 10px 3px 8px;
+      border-radius: 999px;
+    }
+    .status-badge .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .status-badge.good { background: var(--status-good-bg); color: var(--good); }
+    .status-badge.good .dot { background: var(--good); }
+    .status-badge.warning { background: var(--status-warning-bg); color: #9a6b00; }
+    .status-badge.warning .dot { background: var(--warning); }
+    .status-badge.critical { background: var(--status-critical-bg); color: var(--critical); }
+    .status-badge.critical .dot { background: var(--critical); }
+    @media (prefers-color-scheme: dark) {
+      .status-badge.warning { color: var(--warning); }
+    }
+    .error-box {
+      background: var(--bad-bg);
+      border: 1px solid var(--bad-fg);
+      color: var(--bad-fg);
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-size: 0.92rem;
+    }
+    .info-note {
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-style: italic;
+      margin: 12px 0 0;
+    }
+    .test-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .test-head .date { font-weight: 700; font-size: 0.95rem; }
+    .test-head .meta { color: var(--muted); font-size: 0.85rem; }
+
+    .timeline { list-style: none; margin: 0; padding: 0; }
+    .timeline-item { position: relative; padding-left: 26px; padding-bottom: 22px; }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: 5px;
+      top: 18px;
+      bottom: -4px;
+      width: 2px;
+      background: var(--border);
+    }
+    .timeline-item:last-child::before { display: none; }
+    .timeline-dot {
+      position: absolute;
+      left: 0;
+      top: 4px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 3px var(--card);
+    }
+    .timeline-dot.good { background: var(--good); }
+    .timeline-dot.critical { background: var(--critical); }
+    ul.defects { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    ul.defects li { padding: 8px 12px; border-radius: 8px; font-size: 0.88rem; line-height: 1.4; }
+    li.dangerous { background: var(--status-critical-bg); color: var(--critical); font-weight: 600; }
+    li.major { background: var(--status-warning-bg); color: #9a6b00; }
+    li.minor { background: var(--row-hover); color: var(--secondary); }
+    @media (prefers-color-scheme: dark) {
+      li.major { color: var(--warning); }
+    }
+    li .tag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-right: 6px; opacity: 0.8; }
+    .no-data { color: var(--muted); font-style: italic; margin: 0; }
+
+    /* CO2 gradient gauge */
+    .gauge-block { grid-column: 1 / -1; }
+    .gauge-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+    .gauge-value { font-size: 1rem; font-weight: 700; }
+    .gauge-wrap { position: relative; padding-top: 24px; margin-bottom: 4px; }
+    .gauge-track {
+      position: relative;
+      height: 10px;
+      border-radius: 6px;
+    }
+    .gauge-track.continuous {
+      background: linear-gradient(to right, #0ca30c 0%, #7cb305 22%, #fab219 45%, #ec835a 70%, #d03b3b 100%);
+    }
+    .gauge-marker { position: absolute; top: -6px; width: 2px; height: 22px; background: var(--text); }
+    .gauge-marker-label {
+      position: absolute;
+      top: -22px;
+      transform: translateX(-50%);
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .gauge-scale { display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.72rem; color: var(--muted); }
+
+    /* mileage chart */
+    .chart-wrap { margin-bottom: 24px; }
+    .chart-stat { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+    .chart-stat .delta { font-size: 1.3rem; font-weight: 700; }
+    .chart-stat .delta-note { color: var(--muted); font-size: 0.85rem; }
+    .chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
+    .chart-svg .grid-line { stroke: var(--border); stroke-width: 1; }
+    .chart-svg .tick-label { fill: var(--muted); font-size: 11px; }
+    .chart-svg .end-label { fill: var(--text); font-size: 12px; font-weight: 700; }
+    .chart-svg .area { fill: var(--accent); opacity: 0.10; }
+    .chart-svg .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .chart-svg .marker { fill: var(--accent); stroke: var(--card); stroke-width: 2; }
+  </style>
+</head>
+<body>
+  <a class="back" href="/">&larr; New check</a>
+  <div><span class="plate">{{ reg }}</span></div>
+
+  {% if not vehicle.error and not vehicle.enrichmentPending %}
+    <nav class="section-nav">
+      <a href="#vehicle-info">Vehicle Info</a>
+      <a href="#performance">Performance</a>
+      <a href="#road-tax">Road Tax</a>
+      <a href="#mot-info">MOT</a>
+      <a href="#buying-signal">Buying Signal</a>
+      {% if vehicle.scores and (vehicle.scores.conditionPercentile is not none or vehicle.scores.failureRateRatio is not none or (vehicle.fleetFailureProfile and vehicle.fleetFailureProfile.topFailures)) %}
+        <a href="#fleet-comparison">Fleet Comparison</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+
+  {% if vehicle.error %}
+    <div class="card">
+      <h2>Vehicle Information</h2>
+      <div class="error-box">{{ vehicle.error }}</div>
+    </div>
+  {% elif vehicle.enrichmentPending %}
+    <div class="card">
+      <h2>Vehicle Information</h2>
+      <div class="error-box">Vehicle not yet in Zyfy's database — enrichment queued, try again shortly.</div>
+    </div>
+  {% else %}
+    {% set s = vehicle.signals or {} %}
+    {% set sum = vehicle.summary or {} %}
+    {% set sco = vehicle.scores or {} %}
+    {% set fleet_fail = vehicle.fleetFailureProfile or {} %}
+    {% set fleet_adv = vehicle.fleetAdvisoryProfile or {} %}
+
+    <div class="card" id="vehicle-info">
+      <h2>Vehicle Information</h2>
+      <div class="grid">
+        <div><span class="label">Make</span><span class="value">{{ vehicle.make }}</span></div>
+        <div><span class="label">Model</span><span class="value">{{ vehicle.model or '—' }}</span></div>
+        <div><span class="label">Colour</span><span class="value">{{ vehicle.colour }}</span></div>
+        <div><span class="label">Vehicle type</span><span class="value">{{ vehicle.vehicleType | humanize }}</span></div>
+        <div><span class="label">Year of manufacture</span><span class="value">{{ vehicle.yearOfManufacture }}</span></div>
+        <div><span class="label">First registered</span><span class="value">{{ vehicle.monthOfFirstRegistration or '—' }}</span></div>
+        <div><span class="label">Vehicle age</span><span class="value">{{ vehicle.vehicleAgeYears | formatage }}</span></div>
+        <div><span class="label">V5C last issued</span><span class="value">{{ s.v5cLastIssued | fmtdate }}</span></div>
+      </div>
+    </div>
+
+    <div class="card" id="performance">
+      <h2>Vehicle Performance</h2>
+      {% set dts = s.drivetrainStressProfile or {} %}
+      <div class="grid">
+        <div><span class="label">Fuel type</span><span class="value">{{ vehicle.fuelType | humanize }}</span></div>
+        <div><span class="label">Engine capacity</span><span class="value">{{ vehicle.engineCapacityCc }} cc</span></div>
+        <div><span class="label">Euro emission standard</span><span class="value">{{ s.euroEmissionStandard or '—' }}</span></div>
+        <div>
+          <span class="label">ULEZ compliant</span>
+          <span class="pill {{ 'ok' if s.ulezCompliant else 'bad' }}">{{ s.ulezCompliant | humanize }}</span>
+        </div>
+        <div><span class="label">Likely driving pattern</span><span class="value">{{ dts.likelyDrivingPattern | humanize }}</span></div>
+        {% if dts.dpfRisk %}
+          <div>
+            <span class="label">DPF clogging risk</span>
+            <span class="pill {{ 'ok' if dts.dpfRisk == 'low' else ('warn' if dts.dpfRisk == 'elevated' else 'bad') }}">{{ dts.dpfRisk | humanize }}</span>
+          </div>
+        {% endif %}
+
+        {% if co2band %}
+          <div class="gauge-block">
+            <div class="gauge-head">
+              <span class="label">CO2 emissions</span>
+              {% if co2 %}<span class="gauge-value">{{ co2.label }}</span>{% endif %}
+            </div>
+            <div class="gauge-wrap">
+              <div class="gauge-marker-label" style="left: {{ co2band.percent }}%;">{{ co2band.value | int }} g/km</div>
+              <div class="gauge-track continuous">
+                <div class="gauge-marker" style="left: {{ co2band.percent }}%;"></div>
+              </div>
+            </div>
+            <div class="gauge-scale"><span>0 (cleanest)</span><span>300+ g/km (dirtiest)</span></div>
+          </div>
+        {% else %}
+          <div><span class="label">CO2 emissions</span><span class="value">{{ s.co2EmissionsGPerKm }} g/km</span></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card" id="road-tax">
+      <h2>Road Tax</h2>
+      <div class="grid">
+        <div>
+          <span class="label">Tax status</span>
+          <span class="pill {{ 'ok' if s.taxStatus == 'taxed' else ('warn' if s.taxStatus == 'sorn' else 'bad') }}">{{ s.taxStatus | humanize }}</span>
+        </div>
+        <div><span class="label">Tax due date</span><span class="value">{{ s.taxDueDate | fmtdate }}</span></div>
+        <div><span class="label">Days remaining</span><span class="value">{{ s.taxDaysRemaining if s.taxDaysRemaining is not none else '—' }}</span></div>
+        <div><span class="label">Road tax band</span><span class="value">{{ s.vedBand | humanize }}</span></div>
+        <div><span class="label">Road tax annual cost</span><span class="value">&pound;{{ s.vedAnnualCostGbp }}/yr</span></div>
+        <div><span class="label">Marked for export</span><span class="value">{{ s.markedForExport | humanize }}</span></div>
+      </div>
+    </div>
+
+    <div class="card" id="mot-info">
+      <h2>MOT Information</h2>
+      <div class="grid" style="margin-bottom: 20px;">
+        <div>
+          <span class="label">MOT status</span>
+          <span class="pill {{ 'ok' if s.motStatus == 'valid' else ('warn' if s.motStatus == 'no_details' else 'bad') }}">{{ s.motStatus | humanize }}</span>
+        </div>
+        <div><span class="label">MOT expiry date</span><span class="value">{{ s.motExpiryDate | fmtdate }}</span></div>
+        <div>
+          <span class="label">Days remaining</span>
+          <span class="value">{{ s.motDaysRemaining if s.motDaysRemaining is not none else '—' }}</span>
+          {% if s.imminentMot %}<span class="pill warn" style="margin-left: 6px;">Due soon</span>{% endif %}
+        </div>
+        <div><span class="label">MOT pass rate</span><span class="value">{{ (s.motPassRate * 100) | round | int if s.motPassRate is not none else '—' }}%</span></div>
+        <div><span class="label">Total tests</span><span class="value">{{ s.totalMotTests }} ({{ s.totalMotFailures }} failed)</span></div>
+        <div>
+          <span class="label">Outstanding recall</span>
+          <span class="pill {{ 'bad' if s.hasOutstandingRecall else 'ok' }}">{{ s.hasOutstandingRecall | humanize }}</span>
+        </div>
+        <div>
+          <span class="label">High failure history</span>
+          <span class="pill {{ 'bad' if s.highFailureHistory else 'ok' }}">{{ s.highFailureHistory | humanize }}</span>
+        </div>
+        <div><span class="label">Repeat failure count</span><span class="value">{{ s.repeatFailureCount if s.repeatFailureCount is not none else '—' }}</span></div>
+        <div><span class="label">Total advisories (lifetime)</span><span class="value">{{ s.totalAdvisoryCount if s.totalAdvisoryCount is not none else '—' }}</span></div>
+        <div><span class="label">Total failure items (lifetime)</span><span class="value">{{ s.totalFailureItemCount if s.totalFailureItemCount is not none else '—' }}</span></div>
+        <div><span class="label">Latest test advisories</span><span class="value">{{ s.latestAdvisoryCount if s.latestAdvisoryCount is not none else '—' }}</span></div>
+        <div><span class="label">Latest test failure items</span><span class="value">{{ s.latestFailureItemCount if s.latestFailureItemCount is not none else '—' }}</span></div>
+        <div><span class="label">Advisories (last 3 tests)</span><span class="value">{{ s.advisoriesLast3Tests if s.advisoriesLast3Tests is not none else '—' }}</span></div>
+        <div>
+          <span class="label">Advisory trend (raw)</span>
+          <span class="value">{{ s.advisoryTrend | humanize }}</span>
+        </div>
+        <div>
+          <span class="label">Last MOT result</span>
+          <span class="pill {{ 'ok' if s.lastMotResult == 'passed' else 'bad' }}">{{ s.lastMotResult | humanize }}</span>
+        </div>
+        <div><span class="label">First MOT date</span><span class="value">{{ s.firstMotDate | fmtdate }}</span></div>
+        <div><span class="label">Last MOT date</span><span class="value">{{ s.lastMotDate | fmtdate }}</span></div>
+        {% if s.firstMotDue %}
+          <div><span class="label">First MOT due</span><span class="value">{{ s.firstMotDue | fmtdate }}</span></div>
+        {% endif %}
+        <div><span class="label">Latest odometer (Zyfy)</span><span class="value">{{ s.latestOdometerMiles }} mi</span></div>
+        <div><span class="label">Typical annual mileage</span><span class="value">{{ s.typicalAnnualMileageMiles }} mi/yr</span></div>
+        <div><span class="label">Mileage vs fleet</span><span class="value">{{ s.odometerVsFleetAverage | humanize }}</span></div>
+      </div>
+
+      {% if mot.error %}
+        <div class="error-box">{{ mot.error }}</div>
+      {% else %}
+        {% if mileage_chart %}
+          <div class="chart-wrap">
+            <h3 class="sub-heading">Mileage history</h3>
+            <div class="chart-stat">
+              <span class="delta">+{{ mileage_chart.delta_label }} mi</span>
+              <span class="delta-note">across {{ mileage_chart.test_count }} recorded tests</span>
+            </div>
+            <svg class="chart-svg" viewBox="0 0 {{ mileage_chart.width }} {{ mileage_chart.height }}" preserveAspectRatio="none" role="img" aria-label="Mileage recorded at each MOT test">
+              {% for g in mileage_chart.gridlines %}
+                <line class="grid-line" x1="0" y1="{{ g.y }}" x2="{{ mileage_chart.width }}" y2="{{ g.y }}"></line>
+                <text class="tick-label" x="0" y="{{ g.y - 4 }}">{{ g.label }}</text>
+              {% endfor %}
+              <path class="area" d="{{ mileage_chart.area_path }}"></path>
+              <path class="line" d="{{ mileage_chart.line_path }}"></path>
+              {% for t in mileage_chart.year_ticks %}
+                <line class="grid-line" x1="{{ t.x }}" y1="{{ t.y }}" x2="{{ t.x }}" y2="{{ t.y + 6 }}"></line>
+                <text class="tick-label" x="{{ t.x }}" y="{{ t.y + 20 }}" text-anchor="middle">{{ t.label }}</text>
+              {% endfor %}
+              {% for p in mileage_chart.points %}
+                <circle class="marker" cx="{{ p.x }}" cy="{{ p.y }}" r="5">
+                  <title>{{ p.date }} — {{ p.value_label }} mi</title>
+                </circle>
+              {% endfor %}
+              {% set last = mileage_chart.points[-1] %}
+              <text class="end-label" x="{{ last.x }}" y="{{ last.y - 12 }}" text-anchor="end">{{ last.value_label }} mi</text>
+            </svg>
+          </div>
+        {% endif %}
+
+        {% if mot_history %}
+          <h3 class="sub-heading">Test history</h3>
+          <ol class="timeline">
+            {% for entry in mot_history %}
+              <li class="timeline-item">
+                <span class="timeline-dot {{ 'good' if entry.result == 'PASSED' else 'critical' }}"></span>
+                <div class="test-head">
+                  <span class="date">{{ entry.date }}</span>
+                  {% for r in entry.results %}
+                    <span class="pill {{ 'ok' if r == 'PASSED' else 'bad' }}">{{ r }}</span>
+                    {% if not loop.last %}<span class="meta">&rarr;</span>{% endif %}
+                  {% endfor %}
+                  {% if entry.retested %}<span class="pill retest">Same-day retest</span>{% endif %}
+                </div>
+                <div class="grid compact">
+                  <div><span class="label">Mileage</span><span class="value">{{ entry.odometer }}</span></div>
+                  <div><span class="label">Expiry date</span><span class="value">{{ entry.expiry or '—' }}</span></div>
+                  <div><span class="label">Test number</span><span class="value">{{ entry.test_number }}</span></div>
+                </div>
+                {% if entry.defects %}
+                  <ul class="defects">
+                    {% for item in entry.defects %}
+                      <li class="{{ 'dangerous' if item.dangerous else ('major' if item.type == 'MAJOR' else 'minor') }}">
+                        <span class="tag">{{ item.type | defectlabel }}</span>{{ item.text }}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p class="no-data">No MOT tests on record.</p>
+        {% endif %}
+      {% endif %}
+    </div>
+
+    <div class="card" id="buying-signal">
+      <h2>Buying Signal</h2>
+      <div class="grid">
+        <div>
+          <span class="label">Buy recommendation</span>
+          {% set rec = sum.buyRecommendation | buyrecstatus %}
+          <span class="status-badge {{ rec or '' }}"><span class="dot"></span>{{ sum.buyRecommendation | humanize }}</span>
+        </div>
+        <div>
+          <span class="label">Vehicle risk level</span>
+          {% set risk = sum.vehicleRiskLevel | riskstatus %}
+          <span class="status-badge {{ risk or '' }}"><span class="dot"></span>{{ sum.vehicleRiskLevel | humanize }}</span>
+        </div>
+        <div>
+          <span class="label">MOT risk level</span>
+          {% set motrisk = sum.motRiskLevel | riskstatus %}
+          <span class="status-badge {{ motrisk or '' }}"><span class="dot"></span>{{ sum.motRiskLevel | humanize }}</span>
+        </div>
+        <div>
+          <span class="label">Condition</span>
+          <span class="status-badge {{ 'good' if sum.conditionBand == 'good' else ('critical' if sum.conditionBand == 'poor' else 'warning') if sum.conditionBand else '' }}"><span class="dot"></span>{{ sum.conditionBand | humanize }}</span>
+        </div>
+        <div>
+          <span class="label">Owner maintenance</span>
+          <span class="status-badge {{ 'good' if sum.maintenanceBand == 'good' else ('critical' if sum.maintenanceBand == 'poor' else 'warning') if sum.maintenanceBand else '' }}"><span class="dot"></span>{{ sum.maintenanceBand | humanize }}</span>
+        </div>
+        <div>
+          <span class="label">Odometer trend</span>
+          {% set odo = s.odometerTrend | odometerstatus %}
+          <span class="status-badge {{ odo or '' }}"><span class="dot"></span>{{ s.odometerTrend | humanize }}</span>
+        </div>
+        <div>
+          <span class="label">Mileage anomaly risk</span>
+          <span class="status-badge {{ 'critical' if sum.mileageAnomalyRisk == 'high' else ('warning' if sum.mileageAnomalyRisk == 'low' else 'good') if sum.mileageAnomalyRisk else '' }}"><span class="dot"></span>{{ sum.mileageAnomalyRisk | humanize }}</span>
+        </div>
+        <div>
+          <span class="label">Colour change indicated</span>
+          <span class="pill {{ 'bad' if sum.colourChangeIndicated else 'ok' }}">{{ sum.colourChangeIndicated | humanize }}</span>
+        </div>
+        <div>
+          <span class="label">Above-average advisories</span>
+          <span class="pill {{ 'warn' if sum.aboveAverageAdvisories else 'ok' }}">{{ sum.aboveAverageAdvisories | humanize }}</span>
+        </div>
+        <div>
+          <span class="label">Dangerous defect ever</span>
+          <span class="pill {{ 'bad' if s.dangerousDefectEver else 'ok' }}">{{ s.dangerousDefectEver | humanize }}</span>
+        </div>
+        <div>
+          <span class="label">Advisory trend</span>
+          {% set mom = s.advisoryMomentum | momentumstatus %}
+          <span class="status-badge {{ mom or '' }}"><span class="dot"></span>{{ s.advisoryMomentum | humanize }}</span>
+        </div>
+        <div><span class="label">Days since last failure</span><span class="value">{{ s.daysSinceLastFailure if s.daysSinceLastFailure is not none else '—' }}</span></div>
+        <div><span class="label">Failures (last 24mo)</span><span class="value">{{ s.failuresLast24Months if s.failuresLast24Months is not none else '—' }}</span></div>
+        <div>
+          <span class="label">Off-road likelihood</span>
+          {% set offroad = sco.offRoadLikelihoodScore | riskscorestatus %}
+          <span class="status-badge {{ offroad or '' }}"><span class="dot"></span>{{ (sco.offRoadLikelihoodScore * 100) | round | int if sco.offRoadLikelihoodScore is not none else '—' }}%</span>
+        </div>
+      </div>
+
+      {% if s.failureClusters %}
+        <div style="margin-top: 14px;">
+          <span class="label" style="display:block; margin-bottom: 6px;">Repeat failure areas</span>
+          {% for cluster in s.failureClusters %}
+            <span class="pill bad" style="margin-right: 6px;">{{ cluster | humanize }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% if s.advisoryClusters %}
+        <div style="margin-top: 10px;">
+          <span class="label" style="display:block; margin-bottom: 6px;">Recurring advisory areas</span>
+          {% for cluster in s.advisoryClusters %}
+            <span class="pill warn" style="margin-right: 6px;">{{ cluster | humanize }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <p class="info-note">Insurance group isn't available from this data source — not shown.</p>
+    </div>
+
+    {% if sco.conditionPercentile is not none or sco.failureRateRatio is not none or fleet_fail.topFailures %}
+      <div class="card" id="fleet-comparison">
+        <h2>Fleet Comparison</h2>
+        <div class="grid">
+          <div><span class="label">Condition percentile</span><span class="value">{{ sco.conditionPercentile if sco.conditionPercentile is not none else '—' }}{% if sco.conditionPercentile is not none %}th{% endif %}</span></div>
+          <div><span class="label">Maintenance percentile</span><span class="value">{{ sco.maintenancePercentile if sco.maintenancePercentile is not none else '—' }}{% if sco.maintenancePercentile is not none %}th{% endif %}</span></div>
+          <div>
+            <span class="label">Failure rate vs fleet</span>
+            {% set frstatus = sco.failureRateRatio | ratiostatus %}
+            <span class="status-badge {{ frstatus or '' }}"><span class="dot"></span>{{ sco.failureRateRatio | round(2) if sco.failureRateRatio is not none else '—' }}x average</span>
+          </div>
+          <div>
+            <span class="label">Advisory rate vs fleet</span>
+            {% set arstatus = sco.advisoryRateRatio | ratiostatus %}
+            <span class="status-badge {{ arstatus or '' }}"><span class="dot"></span>{{ sco.advisoryRateRatio | round(2) if sco.advisoryRateRatio is not none else '—' }}x average</span>
+          </div>
+          <div><span class="label">Vehicles compared (all mileages)</span><span class="value">{{ sco.benchmarkSampleSize if sco.benchmarkSampleSize is not none else '—' }}</span></div>
+        </div>
+        {% if fleet_fail.topFailures %}
+          <div style="margin-top: 14px;">
+            <span class="label" style="display:block; margin-bottom: 6px;">
+              Common failures for this make/model/year
+              {% if fleet_fail.mileageBand %}at {{ fleet_fail.mileageBand }} miles{% endif %}
+              {% if fleet_fail.sampleSize %}(from {{ fleet_fail.sampleSize }} MOT test records at this mileage band){% endif %}
+            </span>
+            {% for item in fleet_fail.topFailures %}
+              <span class="pill warn" style="margin-right: 6px;">{{ item.category | humanize }} &middot; {{ (item.rate * 100) | round | int }}%</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% if fleet_adv.topAdvisories %}
+          <div style="margin-top: 10px;">
+            <span class="label" style="display:block; margin-bottom: 6px;">Common advisories for this make/model/year</span>
+            {% for item in fleet_adv.topAdvisories %}
+              <span class="pill" style="margin-right: 6px; background: var(--row-hover); color: var(--secondary);">{{ item.category | humanize }} &middot; {{ (item.rate * 100) | round | int }}%</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <p class="info-note">Percentiles: 100th = safest/best nationally for this metric.</p>
+        <p class="info-note">Ratios: 1.0x = fleet average for this make/model/year.</p>
+      </div>
+    {% endif %}
+
+    {% if vehicle.dataAsOf or vehicle.checkedAt or vehicle.sources %}
+      <p class="info-note">
+        {% if vehicle.dataAsOf %}Data as of {{ vehicle.dataAsOf | fmtdate }}.{% endif %}
+        {% if vehicle.checkedAt %}Checked at {{ vehicle.checkedAt | fmtdate }}.{% endif %}
+        {% if vehicle.sources %}Sources: {{ vehicle.sources.values() | select | list | join(', ') }}.{% endif %}
+        {% if vehicle.schemaVersion %}Schema v{{ vehicle.schemaVersion }}.{% endif %}
+      </p>
+    {% endif %}
+  {% endif %}
+</body>
+</html>
