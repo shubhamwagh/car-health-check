@@ -11,4 +11,3 @@ build/
 coverage.xml
 htmlcov/
 .pytest_cache/
-.claude/
