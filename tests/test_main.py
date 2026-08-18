@@ -112,6 +112,7 @@ def test_report_rejects_invalid_registration_format():
         resp = client.get("/report", params={"reg": "!!not-a-plate!!"})
         assert resp.status_code == 200
         assert "Invalid registration number format" in resp.text
+        assert resp.headers["X-No-Cache"] == "1"
         zyfy_mock.assert_not_called()
         mot_mock.assert_not_called()
 
@@ -130,6 +131,9 @@ def test_report_shows_vehicle_error_without_crashing():
         resp = client.get("/report", params={"reg": "AB12CDE"})
         assert resp.status_code == 200
         assert "ZYFY_API_KEY not set in .env" in resp.text
+        # An error page must never be cached for 24h behind the nginx cache -
+        # it's still HTTP 200, so status code alone can't signal "don't cache this".
+        assert resp.headers["X-No-Cache"] == "1"
 
 
 def test_report_renders_vehicle_data():
@@ -155,6 +159,7 @@ def test_report_renders_vehicle_data():
         assert "TOYOTA" in resp.text
         assert "94" in resp.text
         assert "No MOT tests on record" in resp.text
+        assert "X-No-Cache" not in resp.headers
 
 
 def test_report_renders_mileage_chart_and_history_when_tests_present():

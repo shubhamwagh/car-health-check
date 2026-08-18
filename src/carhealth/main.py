@@ -50,11 +50,13 @@ async def report(request: Request, reg: str):
 
     if not REG_RE.match(reg_clean):
         error = {"error": "Invalid registration number format"}
-        return templates.TemplateResponse(
+        response = templates.TemplateResponse(
             request,
             "report.html",
             {"reg": reg_clean, "vehicle": error, "mot": error},
         )
+        response.headers["X-No-Cache"] = "1"
+        return response
 
     vehicle = await get_zyfy_data(reg_clean)
     mot = await get_mot_data(reg_clean)
@@ -72,7 +74,7 @@ async def report(request: Request, reg: str):
         co2 = co2_status(co2_value)
         co2band = co2_band(co2_value)
 
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         request,
         "report.html",
         {
@@ -85,3 +87,11 @@ async def report(request: Request, reg: str):
             "co2band": co2band,
         },
     )
+    # The page is always HTTP 200 even when Zyfy/MOT failed - the error is
+    # rendered inline, not signalled by status code. Without this, the nginx
+    # cache in front of this app (proxy_cache_valid 200 24h) can't tell a
+    # real report from a quota-exhausted/timeout error page and caches the
+    # error for a full day.
+    if vehicle.get("error") or mot.get("error"):
+        response.headers["X-No-Cache"] = "1"
+    return response
