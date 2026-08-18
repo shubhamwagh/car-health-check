@@ -4,6 +4,7 @@ from urllib.parse import quote
 
 import httpx
 
+from . import notify
 from .config import Settings, get_settings
 
 ZYFY_URL = "https://zyfy.uk/v1/vehicle/{reg}"
@@ -11,6 +12,43 @@ MOT_URL = "https://history.mot.api.gov.uk/v1/trade/vehicles/registration/{reg}"
 
 _mot_token: str | None = None
 _mot_token_expires_at: float = 0
+
+# Below this many requests left, push a one-time warning per depletion cycle.
+LOW_QUOTA_THRESHOLD = 10
+_low_quota_warned = False
+
+
+def _check_quota_headers(resp: httpx.Response, settings: Settings) -> None:
+    """Zyfy sends X-Quota-* headers on every response, success or not - use
+    them to warn before the quota actually runs out, not just after.
+
+    Fires once per depletion cycle: stays quiet on every call while already
+    warned, and re-arms itself the moment remaining rises back above the
+    threshold (i.e. the monthly quota reset).
+    """
+    global _low_quota_warned
+    try:
+        remaining = int(resp.headers["X-Quota-Remaining"])
+        limit = int(resp.headers["X-Quota-Limit"])
+    except (KeyError, ValueError):
+        return
+
+    if remaining > LOW_QUOTA_THRESHOLD:
+        _low_quota_warned = False
+        return
+
+    if _low_quota_warned:
+        return
+    _low_quota_warned = True
+
+    resets = resp.headers.get("X-Quota-Resets", "unknown")
+    notify.send(
+        subject="Zyfy quota running low",
+        body=f"{remaining}/{limit} requests left this month - resets {resets}",
+        tags="warning",
+        priority="high",
+        settings=settings,
+    )
 
 
 async def get_zyfy_data(reg: str, settings: Settings | None = None) -> dict:
@@ -28,6 +66,8 @@ async def get_zyfy_data(reg: str, settings: Settings | None = None) -> dict:
                 resp = await client.get(url, headers=headers)
         except httpx.RequestError as e:
             return {"error": f"Could not reach Zyfy API: {e}"}
+
+        _check_quota_headers(resp, settings)
 
         if resp.status_code == 429:
             try:

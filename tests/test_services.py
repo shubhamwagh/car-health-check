@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import httpx
 import pytest
 import respx
@@ -10,6 +12,7 @@ from carhealth.config import Settings
 def reset_mot_token_cache():
     services._mot_token = None
     services._mot_token_expires_at = 0
+    services._low_quota_warned = False
     yield
 
 
@@ -20,6 +23,9 @@ def make_settings(
     mot_api_key="mot-key",
     mot_token_url="https://login.example/token",
     mot_scope_url="https://scope.example/.default",
+    ntfy_url=None,
+    ntfy_topic=None,
+    ntfy_token=None,
 ):
     return Settings(
         zyfy_api_key=zyfy_api_key,
@@ -28,6 +34,18 @@ def make_settings(
         mot_api_key=mot_api_key,
         mot_token_url=mot_token_url,
         mot_scope_url=mot_scope_url,
+        ntfy_url=ntfy_url,
+        ntfy_topic=ntfy_topic,
+        ntfy_token=ntfy_token,
+    )
+
+
+def make_ntfy_settings(**overrides):
+    return make_settings(
+        ntfy_url="https://ntfy.example",
+        ntfy_topic="car-health-quota",
+        ntfy_token="tk_test",
+        **overrides,
     )
 
 
@@ -124,6 +142,77 @@ class TestGetZyfyData:
         result = await services.get_zyfy_data("AB12CDE", make_settings())
         assert "error" in result
         assert "Could not reach Zyfy" in result["error"]
+
+
+class TestLowQuotaWarning:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_warns_once_when_remaining_at_or_below_threshold(self):
+        respx.get("https://zyfy.uk/v1/vehicle/AB12CDE").mock(
+            return_value=httpx.Response(
+                200,
+                json={"make": "TOYOTA"},
+                headers={"X-Quota-Remaining": "5", "X-Quota-Limit": "100", "X-Quota-Resets": "2026-09-10"},
+            )
+        )
+        with patch("carhealth.services.notify.send") as send:
+            await services.get_zyfy_data("AB12CDE", make_ntfy_settings())
+        assert send.called
+        assert "5/100" in send.call_args.kwargs["body"]
+        assert "2026-09-10" in send.call_args.kwargs["body"]
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_does_not_warn_when_remaining_above_threshold(self):
+        respx.get("https://zyfy.uk/v1/vehicle/AB12CDE").mock(
+            return_value=httpx.Response(
+                200, json={"make": "TOYOTA"}, headers={"X-Quota-Remaining": "50", "X-Quota-Limit": "100"}
+            )
+        )
+        with patch("carhealth.services.notify.send") as send:
+            await services.get_zyfy_data("AB12CDE", make_ntfy_settings())
+        assert not send.called
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_warns_only_once_per_depletion_cycle(self):
+        respx.get("https://zyfy.uk/v1/vehicle/AB12CDE").mock(
+            return_value=httpx.Response(
+                200, json={"make": "TOYOTA"}, headers={"X-Quota-Remaining": "3", "X-Quota-Limit": "100"}
+            )
+        )
+        with patch("carhealth.services.notify.send") as send:
+            await services.get_zyfy_data("AB12CDE", make_ntfy_settings())
+            await services.get_zyfy_data("AB12CDE", make_ntfy_settings())
+        assert send.call_count == 1
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_rearms_after_quota_resets(self):
+        route = respx.get("https://zyfy.uk/v1/vehicle/AB12CDE")
+
+        def resp(remaining):
+            return httpx.Response(
+                200, json={"make": "TOYOTA"}, headers={"X-Quota-Remaining": remaining, "X-Quota-Limit": "100"}
+            )
+
+        route.side_effect = [resp("2"), resp("100"), resp("1")]
+        with patch("carhealth.services.notify.send") as send:
+            await services.get_zyfy_data("AB12CDE", make_ntfy_settings())  # low -> warns
+            await services.get_zyfy_data("AB12CDE", make_ntfy_settings())  # reset -> re-arms
+            await services.get_zyfy_data("AB12CDE", make_ntfy_settings())  # low again -> warns
+        assert send.call_count == 2
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_missing_quota_headers_does_not_crash(self):
+        respx.get("https://zyfy.uk/v1/vehicle/AB12CDE").mock(
+            return_value=httpx.Response(200, json={"make": "X"})
+        )
+        with patch("carhealth.services.notify.send") as send:
+            result = await services.get_zyfy_data("AB12CDE", make_ntfy_settings())
+        assert result["make"] == "X"
+        assert not send.called
 
 
 class TestGetMotData:

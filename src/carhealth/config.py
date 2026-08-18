@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     mot_token_url: str | None = None
     mot_scope_url: str | None = None
 
+    # Self-hosted ntfy - low-quota warning for the Zyfy free tier. All optional;
+    # notify.send() just logs and skips the push if any of the three are unset.
+    ntfy_url: str | None = None
+    ntfy_topic: str | None = None
+    ntfy_token: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:
