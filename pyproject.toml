@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "car-health-check"
-version = "1.4.0"
+version = "1.5.0"
 description = "Free UK vehicle health check — tax, MOT and buying-signal report using DVSA MOT History API and Zyfy Vehicle Intelligence API"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -48,7 +48,7 @@ source = ["src/carhealth"]
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "1.4.0"
+version = "1.5.0"
 version_files = ["pyproject.toml:^version"]
 tag_format = "v$version"
 
