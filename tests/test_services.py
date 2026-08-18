@@ -103,10 +103,20 @@ class TestGetZyfyData:
             )
         )
         result = await services.get_zyfy_data("AB12CDE", make_settings())
-        assert "quota" in result["error"].lower()
-        assert "2026-09-10T11:25:16.457937Z" in result["error"]
-        assert "100/100" in result["error"]
+        assert "temporarily unavailable" in result["error"].lower()
+        assert "10 Sep 2026" in result["error"]
+        assert "2026-09-10T11:25:16.457937Z" not in result["error"]  # raw ISO timestamp, not user-facing
         assert route.call_count == 1  # no retry loop for a hard monthly cap
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_quota_exhausted_falls_back_gracefully_without_resets_field(self):
+        respx.get("https://zyfy.uk/v1/vehicle/AB12CDE").mock(
+            return_value=httpx.Response(429, json={"code": "quota_exhausted", "limit": 100, "used": 100})
+        )
+        result = await services.get_zyfy_data("AB12CDE", make_settings())
+        assert "temporarily unavailable" in result["error"].lower()
+        assert "later this month" in result["error"]
 
     @pytest.mark.asyncio
     @respx.mock
