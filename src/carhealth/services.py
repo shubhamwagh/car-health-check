@@ -30,6 +30,17 @@ async def get_zyfy_data(reg: str, settings: Settings | None = None) -> dict:
             return {"error": f"Could not reach Zyfy API: {e}"}
 
         if resp.status_code == 429:
+            try:
+                body = resp.json()
+            except ValueError:
+                body = {}
+            if body.get("code") == "quota_exhausted":
+                # A hard monthly cap, not backpressure - retrying just burns 50s
+                # to land on the same answer. Surface the real reason and the
+                # date it lifts instead of a generic timeout.
+                used, limit = body.get("used", "?"), body.get("limit", "?")
+                resets = body.get("resets", "later")
+                return {"error": f"Zyfy monthly quota reached ({used}/{limit} used) - resets {resets}"}
             await asyncio.sleep(min(int(resp.headers.get("Retry-After", "5")), 10))
             continue
         if resp.status_code == 401:

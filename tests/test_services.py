@@ -70,6 +70,40 @@ class TestGetZyfyData:
 
     @pytest.mark.asyncio
     @respx.mock
+    async def test_quota_exhausted_returns_immediately_with_reset_date(self):
+        route = respx.get("https://zyfy.uk/v1/vehicle/AB12CDE")
+        route.mock(
+            return_value=httpx.Response(
+                429,
+                json={
+                    "code": "quota_exhausted",
+                    "error": "Monthly request limit reached.",
+                    "limit": 100,
+                    "used": 100,
+                    "resets": "2026-09-10T11:25:16.457937Z",
+                },
+            )
+        )
+        result = await services.get_zyfy_data("AB12CDE", make_settings())
+        assert "quota" in result["error"].lower()
+        assert "2026-09-10T11:25:16.457937Z" in result["error"]
+        assert "100/100" in result["error"]
+        assert route.call_count == 1  # no retry loop for a hard monthly cap
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_plain_429_without_quota_code_still_retries(self):
+        route = respx.get("https://zyfy.uk/v1/vehicle/AB12CDE")
+        route.side_effect = [
+            httpx.Response(429, headers={"Retry-After": "0"}),
+            httpx.Response(200, json={"make": "TOYOTA"}),
+        ]
+        result = await services.get_zyfy_data("AB12CDE", make_settings())
+        assert result["make"] == "TOYOTA"
+        assert route.call_count == 2
+
+    @pytest.mark.asyncio
+    @respx.mock
     async def test_401_returns_invalid_key_error(self):
         respx.get("https://zyfy.uk/v1/vehicle/AB12CDE").mock(return_value=httpx.Response(401))
         result = await services.get_zyfy_data("AB12CDE", make_settings())
